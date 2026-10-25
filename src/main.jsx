@@ -5,8 +5,8 @@ import { createClient } from '@supabase/supabase-js';
 import { Activity, ArrowLeft, ArrowRight, BarChart3, Check, ChevronDown, CircleHelp, Copy, Eye, FileText, Globe, LayoutDashboard, LogOut, Menu, Plus, Search, Settings, Share2, Sparkles, Trash2, X } from 'lucide-react';
 import './style.css';
 
-const runtimeUrl = import.meta.env.VITE_SUPABASE_URL || (typeof localStorage!=='undefined' ? localStorage.getItem('dinuvox-supabase-url') : '');
-const runtimeKey = import.meta.env.VITE_SUPABASE_ANON_KEY || (typeof localStorage!=='undefined' ? localStorage.getItem('dinuvox-supabase-key') : '');
+const runtimeUrl = import.meta.env.VITE_SUPABASE_URL || (typeof localStorage!=='undefined' ? localStorage.getItem('dinuvox-supabase-url') : '') || 'https://gnexauqypriiaxjgmdtl.supabase.co';
+const runtimeKey = import.meta.env.VITE_SUPABASE_ANON_KEY || (typeof localStorage!=='undefined' ? localStorage.getItem('dinuvox-supabase-key') : '') || 'sb_publishable_0N_IF0TyvSo-Z78DzXkrPg_dPbeQEEy';
 const configured = Boolean(runtimeUrl && runtimeKey && !runtimeUrl.includes('YOUR_PROJECT') && !runtimeKey.includes('YOUR_SUPABASE'));
 const supabase = configured ? createClient(runtimeUrl, runtimeKey) : null;
 const defaultDesign = { primaryColor: '#dc2626', backgroundColor: '#fffafa', textColor: '#201b1b', buttonRadius: 14, font: 'Inter' };
