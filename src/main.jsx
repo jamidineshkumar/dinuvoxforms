@@ -29,16 +29,20 @@ const templates = [
 const slugify = s => (s || 'my-form').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48) || 'my-form';
 const uid = () => crypto.randomUUID();
 function CinematicEffects(){
- const [soundOn,setSoundOn]=useState(()=>{try{return localStorage.getItem('dinuvox-sound')==='on'}catch{return false}});
+ const [soundOn,setSoundOn]=useState(()=>{try{return localStorage.getItem('dinuvox-sound')!=='off'}catch{return true}});
  useEffect(()=>{
   document.documentElement.classList.add('cinematic-ready');
   const audioContext=()=>{const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return null;return new Ctx()};
   const tone=(kind='click')=>{if(!soundOn)return;try{const ctx=audioContext();if(!ctx)return;const osc=ctx.createOscillator(),gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);const now=ctx.currentTime;osc.type='sine';osc.frequency.setValueAtTime(kind==='hover'?620:kind==='close'?240:kind==='success'?880:420,now);osc.frequency.exponentialRampToValueAtTime(kind==='hover'?760:kind==='close'?150:kind==='success'?1100:560,now+.055);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(kind==='hover'?.018:.035,now+.008);gain.gain.exponentialRampToValueAtTime(.0001,now+.085);osc.start(now);osc.stop(now+.09);osc.onended=()=>ctx.close()}catch{}};
+  let audioUnlocked=false;
+  const unlockAudio=()=>{audioUnlocked=true;document.removeEventListener('pointerdown',unlockAudio,true);document.removeEventListener('keydown',unlockAudio,true)};
+  document.addEventListener('pointerdown',unlockAudio,true);document.addEventListener('keydown',unlockAudio,true);
   const onClick=e=>{const target=e.target.closest('button,a,[role="button"],input[type="checkbox"],input[type="radio"],summary');if(!target)return;const label=(target.getAttribute('aria-label')||target.innerText||'').toLowerCase();tone(/close|cancel|back|dismiss/.test(label)?'close':/save|submit|create|publish|success|done/.test(label)?'success':'click')};
+  const onPointerMove=e=>{const cards=document.querySelectorAll('.panel,.form-card,.template-card,.stat-card,.feature-card,.settings-panel,.analytics-card,.public-form-card,.auth-card');cards.forEach(el=>{const r=el.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;el.style.setProperty('--tilt-x',(-y*4).toFixed(2)+'deg');el.style.setProperty('--tilt-y',(x*5).toFixed(2)+'deg');el.style.setProperty('--pointer-x',(x*100).toFixed(1)+'%');el.style.setProperty('--pointer-y',(y*100).toFixed(1)+'%')}else{el.style.setProperty('--tilt-x','0deg');el.style.setProperty('--tilt-y','0deg')}})};
   const onHover=e=>{const target=e.target.closest('button,a,[role="button"],.form-card,.template-card,.stat-card,.panel,.nav-item,.theme-option,.field-row');if(target&&!target.contains(e.relatedTarget))tone('hover')};
-  document.addEventListener('click',onClick,true);document.addEventListener('pointerover',onHover,true);
+  document.addEventListener('click',onClick,true);document.addEventListener('pointerover',onHover,true);document.addEventListener('pointermove',onPointerMove,{passive:true});
   const onPageHide=()=>document.documentElement.classList.add('cinematic-exit');window.addEventListener('pagehide',onPageHide);
-  return()=>{document.removeEventListener('click',onClick,true);document.removeEventListener('pointerover',onHover,true);window.removeEventListener('pagehide',onPageHide);document.documentElement.classList.remove('cinematic-ready','cinematic-exit')};
+  return()=>{document.removeEventListener('click',onClick,true);document.removeEventListener('pointerover',onHover,true);document.removeEventListener('pointermove',onPointerMove);document.removeEventListener('pointerdown',unlockAudio,true);document.removeEventListener('keydown',unlockAudio,true);window.removeEventListener('pagehide',onPageHide);document.documentElement.classList.remove('cinematic-ready','cinematic-exit')};
  },[soundOn]);
  const toggle=()=>setSoundOn(v=>{const next=!v;try{localStorage.setItem('dinuvox-sound',next?'on':'off')}catch{}return next});
  return <button className="sound-toggle" type="button" aria-pressed={soundOn} onClick={toggle} title={soundOn?'Turn interface sounds off':'Turn interface sounds on'}><span className="sound-pulse"/><span>{soundOn?'SOUND ON':'SOUND OFF'}</span><span className="sound-bars" aria-hidden="true"><i/><i/><i/><i/></span></button>
