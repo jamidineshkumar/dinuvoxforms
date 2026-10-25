@@ -87,7 +87,7 @@ The OTP template includes a subtle CSS entrance effect for clients that support 
 
 ### Current sign-in flow
 
-The current frontend uses email + password with Supabase Auth. The branded template above applies to Supabase Auth emails that use that template; it does **not** switch the app to passwordless OTP sign-in by itself. To make the login screen use email OTP instead of passwords, that frontend flow must be changed and tested separately.
+The frontend login and registration screens use email one-time codes through Supabase Auth (`signInWithOtp` and `verifyOtp`) instead of asking users for passwords. Registration can create a user; login is configured not to create unknown users. The branded template above supplies the email design when custom SMTP is configured and the matching Supabase OTP template is selected. Before launch, test both new-account registration and existing-account login, and confirm the project's email confirmation and OTP expiry settings match your intended experience.
 
 ## Database notes
 
