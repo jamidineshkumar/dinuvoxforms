@@ -42,3 +42,10 @@ html[data-theme="dark"] .side-nav a.active{background:#302044;color:#d8b4fe}
 html[data-theme="dark"] .invite-panel{background:linear-gradient(135deg,#21192e,#292038);border-color:#40324f}
 html[data-theme="dark"] .invite-panel b{color:#f1eafa}
 @media(max-width:760px){.invite-panel{grid-template-columns:1fr}.invite-controls{flex-direction:column;align-items:stretch}.invite-controls .btn{width:100%}}
+
+
+/* DinuVoX email OTP feedback */
+.success-box{display:flex;align-items:flex-start;gap:9px;padding:12px 14px;border:1px solid #b7ebcb;background:#effcf4;color:#166534;border-radius:12px;font-size:13px;line-height:1.55}
+[data-theme="dark"] .success-box{background:#102b1c;border-color:#22543a;color:#a7f3c0}
+.auth-card input[autocomplete="one-time-code"]{font-size:20px;letter-spacing:.18em;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+.auth-card input[autocomplete="one-time-code"]::placeholder{font-size:14px;letter-spacing:normal;font-weight:400}
