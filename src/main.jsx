@@ -98,7 +98,7 @@ function AuthPage({mode}){
     window.location.assign('/dashboard');
     return;
    }
-  }catch(e){setError(e.message|| (register?'Could not create your account.':'Could not sign in.'));}
+  }catch(e){const raw=String(e?.message||'');const lower=raw.toLowerCase();if(register&&(lower.includes('confirmation email')||lower.includes('sending email')||lower.includes('smtp')||lower.includes('email rate limit'))){setError('Supabase could not send the signup confirmation email. Your form is not the cause. Configure a working SMTP provider in Supabase → Authentication → SMTP Settings, verify the sender domain with your email provider, then try again. Admin: check Supabase Auth Logs for the exact mail error.')}else if(lower.includes('invalid login credentials')){setError('Email or password is incorrect. If you just registered, verify your email first.')}else if(lower.includes('email not confirmed')){setError('Please verify your email before signing in. Check your inbox and spam folder, then use Resend code.')}else{setError(raw||(register?'Could not create your account.':'Could not sign in.'));}}
   finally{setBusy(false);}
  }
  async function verifyCode(e){
