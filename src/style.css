@@ -169,3 +169,13 @@ th{letter-spacing:.055em}
 @keyframes soundWave{to{height:12px}}@keyframes soundPulse{50%{opacity:.45;transform:scale(.7)}}
 @media(max-width:600px){.sound-toggle{right:12px;bottom:12px;padding:9px 11px;font-size:9px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;transform:none!important}}
+
+/* Immersive depth layer: pointer-reactive 3D surfaces */
+#root{perspective:1600px;perspective-origin:50% 25%}
+.panel,.form-card,.template-card,.stat-card,.feature-card,.settings-panel,.analytics-card,.public-form-card,.auth-card{position:relative;transform-style:preserve-3d;will-change:transform;--tilt-x:0deg;--tilt-y:0deg}
+.panel:hover,.form-card:hover,.template-card:hover,.stat-card:hover,.feature-card:hover,.settings-panel:hover,.analytics-card:hover,.public-form-card:hover,.auth-card:hover{transform:perspective(1000px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-4px);box-shadow:0 24px 60px rgba(30,10,28,.13),0 0 0 1px rgba(244,63,94,.08)}
+.panel:after,.form-card:after,.template-card:after,.stat-card:after,.feature-card:after,.settings-panel:after,.analytics-card:after,.public-form-card:after,.auth-card:after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;background:radial-gradient(circle at var(--pointer-x,50%) var(--pointer-y,50%),rgba(255,255,255,.16),transparent 42%);opacity:0;transition:opacity .35s ease}
+.panel:hover:after,.form-card:hover:after,.template-card:hover:after,.stat-card:hover:after,.feature-card:hover:after,.settings-panel:hover:after,.analytics-card:hover:after,.public-form-card:hover:after,.auth-card:hover:after{opacity:1}
+.sound-toggle{border-color:rgba(251,113,133,.38);box-shadow:0 0 0 1px rgba(251,113,133,.07),0 8px 32px rgba(0,0,0,.2)}
+.sound-toggle[aria-pressed="true"]{background:linear-gradient(115deg,rgba(48,18,34,.94),rgba(24,18,40,.94))}
+@media(hover:none),(prefers-reduced-motion:reduce){.panel:hover,.form-card:hover,.template-card:hover,.stat-card:hover,.feature-card:hover,.settings-panel:hover,.analytics-card:hover,.public-form-card:hover,.auth-card:hover{transform:translateY(-2px)}}
