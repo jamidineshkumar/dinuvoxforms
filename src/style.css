@@ -124,3 +124,48 @@ html[data-theme="dark"] .btn-google:hover{background:#2d2438!important}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 @media(max-width:900px){.hero{min-height:auto;padding-top:72px}.hero:after{width:300px;height:300px;right:-8%;top:43%}.hero-copy h1{font-size:clamp(3.3rem,10vw,5rem)}.mock-window{transform:rotateY(-5deg) rotateX(2deg)}}
 @media(max-width:600px){.hero{padding:54px 22px 64px}.hero-copy h1{font-size:clamp(3rem,14vw,4.2rem)}.hero-copy>p{font-size:15px}.hero:before{background-size:36px 36px}.hero:after{width:220px;height:220px;top:52%;right:-22%}.mock-window{transform:none}.hero-visual:hover .mock-window{transform:translateY(-3px)}.float-card{scale:.85}.feature-card:hover{transform:translateY(-3px)}.logo-symbol{width:39px;height:39px;flex-basis:39px}}
+
+/* DinuVoX cinematic interaction layer */
+:root{--dv-ease:cubic-bezier(.2,.75,.25,1);--dv-glow:rgba(244,63,94,.22)}
+html{scroll-behavior:smooth;scroll-padding-top:90px}
+body{overflow-x:hidden}
+body:before{content:"";position:fixed;inset:-35%;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 15% 12%,rgba(225,29,72,.075),transparent 32%),radial-gradient(ellipse at 82% 72%,rgba(124,58,237,.08),transparent 34%);animation:ambientDrift 24s ease-in-out infinite alternate;transform:translateZ(0)}
+.cinematic-ready body{animation:sceneReveal .7s var(--dv-ease) both}
+.cinematic-ready #root{animation:rootRise .8s var(--dv-ease) both}
+.cinematic-exit #root{animation:sceneExit .22s ease-in both}
+@keyframes ambientDrift{0%{transform:translate3d(-1.5%,0,0) rotate(0deg) scale(1)}100%{transform:translate3d(1.5%,-1%,0) rotate(2deg) scale(1.04)}}
+@keyframes sceneReveal{from{opacity:.7}to{opacity:1}}
+@keyframes rootRise{from{opacity:0;transform:translateY(12px) scale(.995);filter:blur(4px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes sceneExit{to{opacity:.65;transform:translateY(-4px);filter:blur(2px)}}
+button,a,[role="button"],input,textarea,select,summary{transition:transform .24s var(--dv-ease),box-shadow .28s var(--dv-ease),border-color .22s ease,background-color .22s ease,color .22s ease,filter .22s ease}
+button:hover,a:hover,[role="button"]:hover{filter:saturate(1.12)}
+button:active,[role="button"]:active{transform:translateY(1px) scale(.975)!important;transition-duration:.08s!important}
+button:focus-visible,a:focus-visible,[role="button"]:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid rgba(244,63,94,.75);outline-offset:3px;box-shadow:0 0 0 5px rgba(244,63,94,.11)}
+input:focus,textarea:focus,select:focus{transform:translateY(-1px);box-shadow:0 8px 26px rgba(80,20,40,.07),0 0 0 3px rgba(244,63,94,.09)}
+.panel,.form-card,.template-card,.stat-card,.empty-state,.settings-panel,.field-row,.response-row,.analytics-card,.auth-card,.feature-card,.hero-preview,.preview-shell,.nav-item,.theme-option{transform-style:preserve-3d;transition:transform .38s var(--dv-ease),box-shadow .38s var(--dv-ease),border-color .3s ease,background .3s ease}
+.panel:hover,.form-card:hover,.template-card:hover,.stat-card:hover,.feature-card:hover,.settings-panel:hover,.analytics-card:hover{transform:translateY(-3px) perspective(900px) rotateX(.35deg);box-shadow:0 18px 48px rgba(32,10,22,.09),0 0 0 1px rgba(244,63,94,.045)}
+.form-card:hover,.template-card:hover{transform:translateY(-5px) perspective(900px) rotateX(1deg) rotateY(-.5deg)}
+.nav-item:hover,.theme-option:hover{transform:translateX(3px)}
+.field-row:hover,.response-row:hover{background:rgba(244,63,94,.025);border-color:rgba(244,63,94,.2)}
+.btn-primary,.btn-secondary,.btn,.icon-btn{position:relative;isolation:isolate;overflow:hidden}
+.btn-primary:before,.btn-secondary:before,.btn:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.2) 48%,transparent 72%);transform:translateX(-130%);transition:transform .7s var(--dv-ease)}
+.btn-primary:hover:before,.btn-secondary:hover:before,.btn:hover:before{transform:translateX(130%)}
+.btn-primary:hover,.btn:hover{box-shadow:0 9px 26px rgba(220,38,38,.22);transform:translateY(-2px)}
+.brand-mark,.logo-mark{transition:transform .45s var(--dv-ease),filter .35s ease}
+.brand-mark:hover,.logo-mark:hover{transform:perspective(300px) rotateY(-12deg) rotateX(8deg) scale(1.06);filter:drop-shadow(0 8px 18px rgba(244,63,94,.3))}
+table tbody tr{transition:background-color .2s ease,transform .2s ease}
+table tbody tr:hover{background:rgba(244,63,94,.035)}
+th{letter-spacing:.055em}
+.loading-screen,.loading-inline{animation:softPulse 1.7s ease-in-out infinite alternate}
+@keyframes softPulse{from{opacity:.72}to{opacity:1}}
+.sound-toggle{position:fixed;z-index:1000;right:18px;bottom:18px;display:flex;align-items:center;gap:9px;padding:10px 13px;border:1px solid rgba(244,63,94,.24);border-radius:999px;background:rgba(18,14,22,.88);color:#fff;font-size:10px;font-weight:800;letter-spacing:.12em;box-shadow:0 8px 32px rgba(0,0,0,.18);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.sound-toggle:hover{transform:translateY(-3px);box-shadow:0 12px 35px rgba(225,29,72,.2)}
+.sound-pulse{width:6px;height:6px;border-radius:50%;background:#777}
+.sound-toggle[aria-pressed="true"] .sound-pulse{background:#fb7185;box-shadow:0 0 12px #fb7185;animation:soundPulse 1.8s ease-in-out infinite}
+.sound-bars{display:flex;align-items:center;gap:2px;height:13px}
+.sound-bars i{display:block;width:2px;height:4px;border-radius:3px;background:#fb7185}
+.sound-toggle[aria-pressed="true"] .sound-bars i{animation:soundWave .65s ease-in-out infinite alternate}
+.sound-bars i:nth-child(2){animation-delay:.12s}.sound-bars i:nth-child(3){animation-delay:.25s}.sound-bars i:nth-child(4){animation-delay:.08s}
+@keyframes soundWave{to{height:12px}}@keyframes soundPulse{50%{opacity:.45;transform:scale(.7)}}
+@media(max-width:600px){.sound-toggle{right:12px;bottom:12px;padding:9px 11px;font-size:9px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;transform:none!important}}
