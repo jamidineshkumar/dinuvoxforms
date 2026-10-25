@@ -8,7 +8,13 @@ import './style.css';
 const runtimeUrl = import.meta.env.VITE_SUPABASE_URL || 'https://gnexauqypriiaxjgmdtl.supabase.co';
 const runtimeKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_0N_IF0TyvSo-Z78DzXkrPg_dPbeQEEy';
 const configured = Boolean(runtimeUrl && runtimeKey && !runtimeUrl.includes('YOUR_PROJECT') && !runtimeKey.includes('YOUR_SUPABASE'));
-const supabase = configured ? createClient(runtimeUrl, runtimeKey) : null;
+const rememberedSession = typeof window !== 'undefined' ? localStorage.getItem('dinuvox-remember-me') !== 'false' : true;
+const authStorage = typeof window !== 'undefined' ? (rememberedSession ? window.localStorage : window.sessionStorage) : undefined;
+const supabase = configured ? createClient(runtimeUrl, runtimeKey, { auth: { storage: authStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }) : null;
+function getAuthClient(remember = true) {
+ const storage = remember ? window.localStorage : window.sessionStorage;
+ return createClient(runtimeUrl, runtimeKey, { auth: { storage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+}
 const defaultDesign = { primaryColor: '#dc2626', backgroundColor: '#fffafa', textColor: '#201b1b', buttonRadius: 14, font: 'Inter' };
 const defaultSettings = { successTitle: 'You’re all set!', successMessage: 'Your response has been recorded.', collectEmail: false, showProgress: true, allowMultiple: true };
 const fieldTypes = [ ['short_text','Short answer'], ['long_text','Paragraph'], ['email','Email'], ['phone','Phone number'], ['number','Number'], ['date','Date'], ['dropdown','Dropdown'], ['radio','Multiple choice'], ['checkbox','Checkboxes'], ['yes_no','Yes / No'], ['rating','Rating'], ['section','Section heading'] ];
@@ -40,35 +46,72 @@ function AuthPage({mode}){
  const nav=useNavigate();
  const [name,setName]=useState('');
  const [email,setEmail]=useState('');
+ const [password,setPassword]=useState('');
+ const [confirmPassword,setConfirmPassword]=useState('');
  const [code,setCode]=useState('');
- const [stage,setStage]=useState('email');
+ const [stage,setStage]=useState('credentials');
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
+ const [remember,setRemember]=useState(()=>localStorage.getItem('dinuvox-remember-me')!=='false');
+ const [showPassword,setShowPassword]=useState(false);
  const register=mode==='register';
- async function sendCode(e){
+ function authForChoice(){
+  localStorage.setItem('dinuvox-remember-me',remember?'true':'false');
+  return getAuthClient(remember);
+ }
+ async function submitCredentials(e){
   e.preventDefault();setBusy(true);setError('');setNotice('');
   try{
-   const options={shouldCreateUser:register};
-   if(register) options.data={full_name:name};
-   const {error}=await supabase.auth.signInWithOtp({email:email.trim().toLowerCase(),options});
-   if(error)throw error;
-   setStage('code');
-   setNotice('A verification code has been sent. Check your inbox and spam folder.');
-  }catch(e){setError(e.message||'Could not send the verification code.');}
+   const client=authForChoice();
+   const normalizedEmail=email.trim().toLowerCase();
+   if(register){
+    if(password.length<8)throw new Error('Use a password with at least 8 characters.');
+    if(password!==confirmPassword)throw new Error('The passwords do not match.');
+    const {data,error}=await client.auth.signUp({email:normalizedEmail,password,options:{data:{full_name:name.trim()}}});
+    if(error)throw error;
+    if(data.session){window.location.assign('/dashboard');return;}
+    setStage('code');
+    setNotice('We sent a signup verification code to your email. Enter it below to activate your account.');
+   }else{
+    const {error}=await client.auth.signInWithPassword({email:normalizedEmail,password});
+    if(error)throw error;
+    window.location.assign('/dashboard');
+    return;
+   }
+  }catch(e){setError(e.message|| (register?'Could not create your account.':'Could not sign in.'));}
   finally{setBusy(false);}
  }
  async function verifyCode(e){
   e.preventDefault();setBusy(true);setError('');setNotice('');
   try{
-   const {data,error}=await supabase.auth.verifyOtp({email:email.trim().toLowerCase(),token:code.trim(),type:'email'});
+   const client=authForChoice();
+   const {data,error}=await client.auth.verifyOtp({email:email.trim().toLowerCase(),token:code.trim(),type:'signup'});
    if(error)throw error;
-   if(data.session){nav('/dashboard');}
-   else {setError('The code was accepted, but no session was created. Check your Supabase email authentication settings.');}
-  }catch(e){setError(e.message||'That code is invalid or expired. Request a new one and try again.');}
+   if(data.session){window.location.assign('/dashboard');return;}
+   setError('The code was accepted, but no session was created. Check Supabase email confirmation settings.');
+  }catch(e){setError(e.message||'That code is invalid or expired. Request a new signup email and try again.');}
   finally{setBusy(false);}
  }
- return <div className="auth-page"><div className="auth-art"><Logo/><div className="auth-art-copy"><div className="pill pill-light"><Sparkles size={14}/> DinuVoX Forms</div><h1>Good questions create <span>great things.</span></h1><p>A better way to collect ideas, build community, and understand your audience.</p><div className="art-lines"><i/><i/><i/><i/><i/></div></div><span className="auth-footer">Forms, reimagined.</span></div><div className="auth-main"><Link to="/" className="back-link"><ArrowLeft size={16}/> Back to home</Link><form className="auth-card" onSubmit={stage==='email'?sendCode:verifyCode}><div className="auth-icon"><FileText size={21}/></div><h2>{stage==='code'?'Check your inbox':register?'Create your account':'Welcome back'}</h2><p>{stage==='code'?<>Enter the one-time code sent to <strong>{email}</strong>.</>:register?'Create your account with a secure email code.':'Sign in securely with a one-time email code. No password needed.'}</p>{stage==='email'&&register&&<label className="form-label">Full name<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Your name" autoComplete="name" maxLength={100}/></label>}{stage==='email'&&<label className="form-label">Email address<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" maxLength={254}/></label>}{stage==='code'&&<><label className="form-label">6-digit verification code<input required inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value.replace(/\\D/g,'').slice(0,8))} placeholder="Enter your code" minLength={6} maxLength={8}/></label><button type="button" className="btn btn-ghost btn-full" disabled={busy} onClick={()=>{setStage('email');setCode('');setError('');setNotice('')}}><ArrowLeft size={15}/> Change email address</button></>}{error&&<div className="error-box" role="alert">{error}</div>}{notice&&<div className="success-box" role="status">{notice}</div>}<button className="btn btn-primary btn-full" disabled={busy}>{busy?'Please wait…':stage==='code'?'Verify and continue':'Send verification code'} <ArrowRight size={16}/></button>{stage==='code'&&<button type="button" className="btn btn-secondary btn-full" disabled={busy} onClick={sendCode}>Send a new code</button>}<div className="auth-switch">{register?'Already have an account?':'New to DinuVoX Forms?'} <Link to={register?'/login':'/register'}>{register?'Log in':'Create an account'}</Link></div><p className="small muted center">Secure one-time codes · DinuVoX-branded email delivery</p></form></div></div>
+ async function resendSignupCode(){
+  setBusy(true);setError('');setNotice('');
+  try{
+   const client=authForChoice();
+   const {error}=await client.auth.resend({type:'signup',email:email.trim().toLowerCase()});
+   if(error)throw error;
+   setNotice('A new verification email has been requested. Check your inbox and spam folder.');
+  }catch(e){setError(e.message||'Could not resend the verification email.');}
+  finally{setBusy(false);}
+ }
+ async function googleSignIn(){
+  setBusy(true);setError('');setNotice('');
+  try{
+   const client=authForChoice();
+   const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/dashboard'}});
+   if(error)throw error;
+  }catch(e){setError(e.message||'Google sign-in could not start. Check that Google is enabled in Supabase.');setBusy(false);}
+ }
+ return <div className="auth-page"><div className="auth-art"><Logo/><div className="auth-art-copy"><div className="pill pill-light"><Sparkles size={14}/> DinuVoX Forms</div><h1>Good questions create <span>great things.</span></h1><p>A better way to collect ideas, build community, and understand your audience.</p><div className="art-lines"><i/><i/><i/><i/><i/></div></div><span className="auth-footer">Forms, reimagined.</span></div><div className="auth-main"><Link to="/" className="back-link"><ArrowLeft size={16}/> Back to home</Link><form className="auth-card" onSubmit={stage==='code'?verifyCode:submitCredentials}><div className="auth-icon"><FileText size={21}/></div><h2>{stage==='code'?'Verify your email':register?'Create your account':'Welcome back'}</h2><p>{stage==='code'?<>Enter the signup verification code sent to <strong>{email}</strong>.</>:register?'Create your account with your name, email, and password. Email verification is required.':'Sign in with your email address and password.'}</p>{stage==='credentials'&&register&&<label className="form-label">Full name<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Your name" autoComplete="name" maxLength={100}/></label>}{stage==='credentials'&&<label className="form-label">Email address<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" maxLength={254}/></label>}{stage==='credentials'&&<><label className="form-label">Password<input type={showPassword?'text':'password'} required value={password} onChange={e=>setPassword(e.target.value)} placeholder={register?'At least 8 characters':'Your password'} autoComplete={register?'new-password':'current-password'} minLength={register?8:1}/></label>{register&&<label className="form-label">Confirm password<input type={showPassword?'text':'password'} required value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Enter your password again" autoComplete="new-password" minLength={8}/></label>}<label className="remember-row"><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/><span>Remember me</span></label><button type="button" className="password-toggle" onClick={()=>setShowPassword(v=>!v)}>{showPassword?'Hide password':'Show password'}</button></>}{stage==='code'&&<><label className="form-label">Verification code<input required inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value.replace(/\\D/g,'').slice(0,8))} placeholder="Enter the code from your email" minLength={6} maxLength={8}/></label><button type="button" className="btn btn-ghost btn-full" disabled={busy} onClick={()=>{setStage('credentials');setCode('');setError('');setNotice('')}}><ArrowLeft size={15}/> Back to details</button></>}{error&&<div className="error-box" role="alert">{error}</div>}{notice&&<div className="success-box" role="status">{notice}</div>}<button className="btn btn-primary btn-full" disabled={busy}>{busy?'Please wait…':stage==='code'?'Verify email and continue':register?'Create account':'Log in'} <ArrowRight size={16}/></button>{stage==='code'&&<button type="button" className="btn btn-secondary btn-full" disabled={busy} onClick={resendSignupCode}>Resend verification code</button>}{stage==='credentials'&&<><div className="auth-divider"><span>OR CONTINUE WITH</span></div><button type="button" className="btn btn-google btn-full" disabled={busy} onClick={googleSignIn}><span className="google-g" aria-hidden="true">G</span> Continue with Google</button></>}<div className="auth-switch">{register?'Already have an account?':'New to DinuVoX Forms?'} <Link to={register?'/login':'/register'}>{register?'Log in':'Create an account'}</Link></div><p className="small muted center">{register?'Email verification protects your new account.':'Your account is protected with secure sign-in.'} · DinuVoX Forms</p></form></div></div>
 }
 function Shell({children,profile,onLogout}){const [mobile,setMobile]=useState(false);const navs=[['/dashboard','Overview',LayoutDashboard],['/templates','Templates',FileText],['/analytics','Analytics',BarChart3],['/settings','Settings',Settings]];return <div className="app-shell"><aside className={`sidebar ${mobile?'sidebar-open':''}`}><div className="sidebar-brand"><Logo/><button className="icon-btn mobile-only" onClick={()=>setMobile(false)}><X size={18}/></button></div><div className="workspace-label">WORKSPACE</div><nav className="side-nav">{navs.map(([to,label,Icon])=><NavItem key={to} to={to} label={label} Icon={Icon} close={()=>setMobile(false)}/>)}</nav><div className="sidebar-bottom"><div className="help-card"><div className="help-icon"><CircleHelp size={17}/></div><b>Need a hand?</b><p>Start with a template or explore the builder.</p><Link to="/templates" onClick={()=>setMobile(false)}>Browse templates <ArrowRight size={13}/></Link></div><div className="profile-row"><div className="avatar">{(profile||'U').slice(0,1).toUpperCase()}</div><div className="profile-meta"><b>{profile||'Creator'}</b><span>Personal workspace</span></div><button className="icon-btn" title="Sign out" onClick={onLogout}><LogOut size={16}/></button></div></div></aside>{mobile&&<div className="mobile-scrim" onClick={()=>setMobile(false)}/>}<div className="main-area"><header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setMobile(true)}><Menu size={20}/></button><div className="breadcrumb">Workspace <span>/</span> <b>{navsLabel()}</b></div><div className="topbar-right"><span className="status-dot"/> All changes saved <div className="avatar avatar-small">{(profile||'U').slice(0,1).toUpperCase()}</div></div></header><main className="page-content">{children}</main></div></div>}
 function NavItem({to,label,Icon,close}){const loc=window.location.pathname;return <Link to={to} onClick={close} className={`side-link ${loc===to?'active':''}`}><Icon size={18}/><span>{label}</span>{loc===to&&<span className="nav-active-dot"/>}</Link>}
