@@ -62,6 +62,33 @@ Open the local URL printed by Vite, normally `http://localhost:5173`.
 3. Configure these Edge Function secrets: `RESEND_API_KEY`, `EMAIL_FROM` (a verified Resend sender), and `PUBLIC_APP_URL` (for example `https://dinuvoxforms.vercel.app`). Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions; never expose the service-role key in frontend variables.
 4. Publish a form, open its editor, and use **Assign this form** to send the invitation.
 
+## DinuVoX-branded authentication and transactional emails
+
+DinuVoX can use its own sender address and branded email designs instead of Supabase's default email delivery. **This keeps Supabase Auth as the identity/session system** (so existing user ownership and row-level security remain intact) while the messages are delivered through your Resend account. Do not replace this with a frontend-only OTP check; verification must remain server-side.
+
+### Configure custom delivery (one-time)
+
+1. In Resend, add and verify a domain you control (for example, `mail.yourdomain.com`) and publish the DNS records Resend provides. You need a verified sender to deliver production email reliably.
+2. In Supabase Dashboard, open **Project Settings → Authentication → SMTP Settings** (the exact menu label may vary) and enable custom SMTP.
+3. Use these Resend SMTP settings:
+   - Host: `smtp.resend.com`
+   - Port: `465` (SSL) or `587` (STARTTLS, if offered)
+   - Username: `resend`
+   - Password: your Resend API key (keep it private)
+   - Sender email: an address on your verified domain, such as `no-reply@mail.yourdomain.com`
+   - Sender name: `DinuVoX Forms`
+4. In **Authentication → Email Templates**, select the OTP / Magic Link template used by your chosen sign-in flow. Copy `supabase/email-templates/otp.html` into the HTML template editor. Keep the `{{ .Token }}` variable unchanged so Supabase can insert the actual one-time code.
+5. Configure the OTP length and expiry in Supabase Auth settings. Keep expiry short and enable sensible rate limits. Test with an address you control before launch.
+6. Use a consistent sender and templates for invitations and other product emails. The existing invitation Edge Function sends via Resend API and needs `RESEND_API_KEY`, `EMAIL_FROM`, and `PUBLIC_APP_URL` secrets.
+
+### Important email-client limitation
+
+The OTP template includes a subtle CSS entrance effect for clients that support it, but many email clients strip or disable animation. The layout therefore stays polished and readable without motion. Never put secrets or OTP validation logic in the email HTML or browser code.
+
+### Current sign-in flow
+
+The frontend login and registration screens use email one-time codes through Supabase Auth (`signInWithOtp` and `verifyOtp`) instead of asking users for passwords. Registration can create a user; login is configured not to create unknown users. The branded template above supplies the email design when custom SMTP is configured and the matching Supabase OTP template is selected. Before launch, test both new-account registration and existing-account login, and confirm the project's email confirmation and OTP expiry settings match your intended experience.
+
 ## Database notes
 
 - Form records belong to the authenticated owner.
