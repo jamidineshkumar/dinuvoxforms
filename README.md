@@ -12,7 +12,8 @@ This version runs independently of Base44. It uses React, Vite, React Router, an
 - Public form links and submission persistence
 - Response table with search and CSV export
 - Analytics summary and recent submission chart
-- Account display-name settings
+- Account display-name settings and Light/Dark/System appearance
+- Form assignments with branded invitation emails (requires Supabase Edge Function + Resend configuration)
 - Supabase SQL schema and row-level security policies
 
 The supplied Base44 code includes a much larger studio/editor feature set. This independent first pass prioritizes the core end-to-end workflow and a clean deployment foundation; features that relied on Base44-specific services have to be reimplemented against Supabase rather than copied unchanged.
@@ -32,7 +33,7 @@ The supplied Base44 code includes a much larger studio/editor feature set. This 
    Use only the browser-safe publishable/anon key here. **Never put a Supabase `service_role` or secret key in a `VITE_` variable.**
 5. In Supabase **Authentication → URL Configuration**, set the Site URL to your local URL while developing (`http://localhost:5173`) and add your deployed Vercel URL to Redirect URLs.
 
-If the environment values are missing, the app shows a setup screen rather than inventing demo data.
+If the environment values are missing, the app shows a setup screen rather than inventing demo data. The setup screen can save a browser-local Supabase URL and publishable/anon key for previewing on that device; for a production deployment, use Vercel Environment Variables so all visitors receive the correct configuration.
 
 ## 2. Run locally
 
@@ -53,6 +54,13 @@ Open the local URL printed by Vite, normally `http://localhost:5173`.
 4. In Vercel **Settings → Environment Variables**, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for Production (and Preview/Development if needed).
 5. Deploy. `vercel.json` rewrites client-side routes to `index.html` so public links such as `/f/my-form-1234` work on refresh.
 6. Add the new `https://your-project.vercel.app` domain to Supabase Auth's allowed redirect URLs.
+
+## Form invitation emails
+
+1. Run `supabase/migrations/20261025000000_form_assignments.sql` in Supabase SQL Editor (or apply it with the Supabase CLI).
+2. Deploy the `supabase/functions/send-form-invitation` Edge Function.
+3. Configure these Edge Function secrets: `RESEND_API_KEY`, `EMAIL_FROM` (a verified Resend sender), and `PUBLIC_APP_URL` (for example `https://dinuvoxforms.vercel.app`). Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions; never expose the service-role key in frontend variables.
+4. Publish a form, open its editor, and use **Assign this form** to send the invitation.
 
 ## Database notes
 

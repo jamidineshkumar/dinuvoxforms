@@ -32,3 +32,13 @@ html[data-theme="dark"] .settings-divider{background:#3b304e}
 html[data-theme="dark"] .btn-secondary{background:#292136;color:#eee8f7;border-color:#413451}
 html[data-theme="dark"] .side-nav a.active{background:#302044;color:#d8b4fe}
 @media(max-width:560px){.theme-options{gap:7px}.theme-option{min-height:70px;border-radius:12px}}
+
+.invite-panel{display:grid;grid-template-columns:minmax(180px,1fr) minmax(260px,1.3fr);gap:14px;align-items:center;margin:0 0 20px;padding:20px 22px;background:linear-gradient(135deg,#fff,#faf6ff);border:1px solid #e8def6;border-radius:18px;box-shadow:0 8px 24px rgba(50,25,75,.04)}
+.invite-panel b{font-size:15px;color:var(--ink,#211d1d)}
+.invite-panel p{margin:6px 0 0;color:var(--muted,#827a7a);font-size:13px;line-height:1.5}
+.invite-controls{display:flex;gap:9px;align-items:center}
+.invite-controls input{flex:1;min-width:0;padding:12px 13px;border:1px solid var(--line,#eee8e7);border-radius:11px;background:white;color:inherit}
+.invite-panel>[role=status]{grid-column:1/-1;margin-top:0}
+html[data-theme="dark"] .invite-panel{background:linear-gradient(135deg,#21192e,#292038);border-color:#40324f}
+html[data-theme="dark"] .invite-panel b{color:#f1eafa}
+@media(max-width:760px){.invite-panel{grid-template-columns:1fr}.invite-controls{flex-direction:column;align-items:stretch}.invite-controls .btn{width:100%}}
