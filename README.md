@@ -1,101 +1,68 @@
-# DinuVoX Forms — Independent React + Supabase build
+# DinuVoX Forms
 
-This version runs independently of Base44. It uses React, Vite, React Router, and Supabase Auth/Postgres. It does not import the Base44 SDK or Base44 Vite plugin and it does not display fake/demo form data.
+DinuVoX Forms is a React + Vite app with Supabase/Postgres for published forms and cross-device responses.
 
-## Included features
+## Authentication model
 
-- Responsive DinuVoX Forms landing page and branded sign-in/sign-up
-- Supabase authentication
+- The sign-in form uses a browser-local display name, email/username, and password.
+- No email verification, OTP, Google OAuth, or invitation emails are used.
+- Passwords are PBKDF2-derived with a per-profile salt; the raw password is not stored.
+- Supabase Anonymous Sign-Ins are used to establish a per-profile database identity so the existing row-level security policies can protect cloud form ownership.
+- Local profiles and their credential hashes are stored in the browser's localStorage. They do not sync to other devices. Clearing browser data can remove local sign-in profiles.
+- The Supabase session refresh token is cached locally with the profile so the app can restore that profile's cloud workspace.
+
+**Important limitation in this branch:** the current form editor still persists drafts to Supabase. Local-only draft storage has not yet been wired into the editor, so do not treat drafts as device-only or confidential until that is completed. This branch removes email-based authentication and email invitation UI, but it is not a complete implementation of the local-drafts requirement yet.
+
+## Features
+
+- Responsive DinuVoX Forms landing page and password-based local profile UI
 - Form dashboard with search, status filters, publishing, unpublishing and deletion
-- Starter templates for dance auditions, event registration, feedback, student surveys, contact forms and quizzes
-- Form builder with common field types, required validation, colors, layout settings and preview
+- Templates for dance auditions, event registration, feedback, student surveys, contact forms and quizzes
+- Form builder with common field types, required validation, colors, layouts and preview
 - Public form links and submission persistence
 - Response table with search and CSV export
 - Analytics summary and recent submission chart
-- Account display-name settings and Light/Dark/System appearance
-- Form assignments with branded invitation emails (requires Supabase Edge Function + Resend configuration)
-- Supabase SQL schema and row-level security policies
+- Display-name settings and Light/Dark/System appearance
 
-The supplied Base44 code includes a much larger studio/editor feature set. This independent first pass prioritizes the core end-to-end workflow and a clean deployment foundation; features that relied on Base44-specific services have to be reimplemented against Supabase rather than copied unchanged.
+## Configure Supabase
 
-## 1. Configure Supabase
-
-1. Create or open a project at https://supabase.com/dashboard.
-2. Open **SQL Editor**, create a new query, paste the contents of `supabase/schema.sql`, and run it.
-3. Open **Project Settings → API** and copy the Project URL and the publishable/anon key.
-4. Copy `.env.example` to `.env.local` in the project root and set:
+1. Open your Supabase project.
+2. In **Authentication → Sign In / Providers** (the exact label may vary), enable **Anonymous Sign-Ins**. This is required for the local-profile-to-cloud-workspace bridge.
+3. Open **SQL Editor** and run `supabase/schema.sql` from this repository. This creates the forms/submissions tables and row-level security policies.
+4. In **Project Settings → API**, copy the Project URL and publishable/anon key.
+5. Create `.env.local` from `.env.example`:
 
    ```env
    VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-   VITE_SUPABASE_ANON_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
+   VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY
    ```
 
-   Use only the browser-safe publishable/anon key here. **Never put a Supabase `service_role` or secret key in a `VITE_` variable.**
-5. In Supabase **Authentication → URL Configuration**, set the Site URL to your local URL while developing (`http://localhost:5173`) and add your deployed Vercel URL to Redirect URLs.
+   Never put a Supabase service-role or secret key in a `VITE_` variable.
+6. In **Authentication → URL Configuration**, set the Site URL to your deployed Vercel URL and add local/preview URLs only if needed.
 
-If the environment values are missing, the app shows a setup screen rather than inventing demo data. The setup screen can save a browser-local Supabase URL and publishable/anon key for previewing on that device; for a production deployment, use Vercel Environment Variables so all visitors receive the correct configuration.
+## Run locally
 
-## 2. Run locally
-
-Install Node.js 20.19+ or 22.12+ and then run from this folder:
+Use Node.js 20.19+ or 22.12+:
 
 ```bash
 npm install
 npm run dev
+npm run build
+npm run preview
 ```
 
-Open the local URL printed by Vite, normally `http://localhost:5173`.
+## Deploy to Vercel
 
-## 3. Deploy to Vercel (free tier)
+1. Import this GitHub repository into Vercel.
+2. Select **Vite** as the framework preset.
+3. Set build command to `npm run build` and output directory to `dist`.
+4. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to Vercel Environment Variables for Production (and Preview/Development if needed).
+5. Deploy. `vercel.json` rewrites client-side routes to `index.html`, allowing public form URLs to load on refresh.
+6. Verify that Anonymous Sign-Ins are enabled and that `supabase/schema.sql` has been applied before testing sign-up, form publishing, public submission, and response review.
 
-1. Upload this folder to a new GitHub repository, or import the repository into Vercel.
-2. In Vercel, choose **Add New → Project** and import the repository.
-3. Framework preset: **Vite**. Build command: `npm run build`. Output directory: `dist`.
-4. In Vercel **Settings → Environment Variables**, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for Production (and Preview/Development if needed).
-5. Deploy. `vercel.json` rewrites client-side routes to `index.html` so public links such as `/f/my-form-1234` work on refresh.
-6. Add the new `https://your-project.vercel.app` domain to Supabase Auth's allowed redirect URLs.
+## Data and security notes
 
-## Form invitation emails
-
-1. Run `supabase/migrations/20261025000000_form_assignments.sql` in Supabase SQL Editor (or apply it with the Supabase CLI).
-2. Deploy the `supabase/functions/send-form-invitation` Edge Function.
-3. Configure these Edge Function secrets: `RESEND_API_KEY`, `EMAIL_FROM` (a verified Resend sender), and `PUBLIC_APP_URL` (for example `https://dinuvoxforms.vercel.app`). Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions; never expose the service-role key in frontend variables.
-4. Publish a form, open its editor, and use **Assign this form** to send the invitation.
-
-## DinuVoX-branded authentication and transactional emails
-
-DinuVoX can use its own sender address and branded email designs instead of Supabase's default email delivery. **This keeps Supabase Auth as the identity/session system** (so existing user ownership and row-level security remain intact) while the messages are delivered through your Resend account. Do not replace this with a frontend-only OTP check; verification must remain server-side.
-
-### Configure custom delivery (one-time)
-
-1. In Resend, add and verify a domain you control (for example, `mail.yourdomain.com`) and publish the DNS records Resend provides. You need a verified sender to deliver production email reliably.
-2. In Supabase Dashboard, open **Project Settings → Authentication → SMTP Settings** (the exact menu label may vary) and enable custom SMTP.
-3. Use these Resend SMTP settings:
-   - Host: `smtp.resend.com`
-   - Port: `465` (SSL) or `587` (STARTTLS, if offered)
-   - Username: `resend`
-   - Password: your Resend API key (keep it private)
-   - Sender email: an address on your verified domain, such as `no-reply@mail.yourdomain.com`
-   - Sender name: `DinuVoX Forms`
-4. In **Authentication → Email Templates**, select the OTP / Magic Link template used by your chosen sign-in flow. Copy `supabase/email-templates/otp.html` into the HTML template editor. Keep the `{{ .Token }}` variable unchanged so Supabase can insert the actual one-time code.
-5. Configure the OTP length and expiry in Supabase Auth settings. Keep expiry short and enable sensible rate limits. Test with an address you control before launch.
-6. Use a consistent sender and templates for invitations and other product emails. The existing invitation Edge Function sends via Resend API and needs `RESEND_API_KEY`, `EMAIL_FROM`, and `PUBLIC_APP_URL` secrets.
-
-### Important email-client limitation
-
-The OTP template includes a subtle CSS entrance effect for clients that support it, but many email clients strip or disable animation. The layout therefore stays polished and readable without motion. Never put secrets or OTP validation logic in the email HTML or browser code.
-
-### Current sign-in flow
-
-The frontend login and registration screens use email one-time codes through Supabase Auth (`signInWithOtp` and `verifyOtp`) instead of asking users for passwords. Registration can create a user; login is configured not to create unknown users. The branded template above supplies the email design when custom SMTP is configured and the matching Supabase OTP template is selected. Before launch, test both new-account registration and existing-account login, and confirm the project's email confirmation and OTP expiry settings match your intended experience.
-
-## Database notes
-
-- Form records belong to the authenticated owner.
-- Public visitors can read only published forms and can insert submissions only when the submitted form is published.
-- Owners can read/delete their own responses and manage their forms.
-- Supabase Storage is not required for this core build. If you later enable image/file question uploads, create a dedicated bucket and add narrowly scoped storage policies before allowing public uploads.
-
-## Important security notes
-
-The frontend key is designed to be public; security depends on the SQL policies. Review the policies before using this for sensitive data. Do not collect passwords, payment-card details, medical information, or other highly sensitive data with a general-purpose public form without additional safeguards. Email confirmation settings are controlled in Supabase Auth.
+- Browser-local profiles are not cloud identities and cannot be recovered on another browser/device.
+- Published forms and responses are stored in Supabase so respondents on other devices can submit responses that the owner can review.
+- The public browser key is intended to be visible; security relies on row-level security. Review the SQL policies before collecting sensitive data.
+- Do not collect passwords, payment-card details, medical information, or other highly sensitive data in general-purpose public forms without additional safeguards.
